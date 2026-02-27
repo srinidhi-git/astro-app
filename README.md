@@ -1,71 +1,94 @@
-## README.md
-
-This project is a professional-grade **Vedic Astrology (Jyotish) Suite** built with Python. It provides high-precision planetary calculations, divisional charts, and a drill-down Vimsottari Dasha system.
+This `README.md` is designed to provide a professional overview of your **Vedic Astrology Suite**, highlighting its advanced astronomical calculations and UI features.
 
 ---
 
-### ### Features
+# 🌌 Vedic Astrology Suite (V1.9.5)
 
-* **High-Precision Calculations:** Uses the Swiss Ephemeris (`pyswisseph`) for astronomical accuracy.
-* **Ayanamsha:** Defaulted to **Lahiri (Chitra Paksha)**, the standard for Vedic Astrology.
-* **Dynamic Charts:** * **Rashi Chart (D1):** Shows planetary positions in the South Indian style.
-* **Divisional Charts:** Supports D2, D3, D9 (Navamsha), D10, and D60 via a dropdown selector.
+A professional-grade Vedic Astrology application built with Python. This suite leverages the **Swiss Ephemeris** for high-precision planetary calculations and features a dynamic GUI for natal chart analysis, divisional charts, and predictive timing systems.
 
+## 🚀 Key Features
 
-* **Vimsottari Dasha System:** * 3-level nested calculation: **Mahadasha → Antardasha → Pratyantardasha**.
-* Calculates based on the Moon's longitudinal position at birth.
-
-
-* **Interactive UI:** * Scrollable interface to view all tables simultaneously.
-* Geographic search (City to Lat/Lon conversion) via Nominatim.
-* Strict input validation (Day/Month/Time range limits).
-* Planetary details include **DMS (Degree, Minute, Second)**, Nakshatra, Pada, and Nakshatra Lord.
+* **Dual Chart Styles**: Toggle between **South Indian** (fixed sign) and **North Indian** (fixed house/diamond) layouts.
+* **Accurate Divisional Charts**: Includes logic for:
+* **D1**: Rashi (Main Chart)
+* **D2**: Hora (Wealth/Character)
+* **D3**: Drekkana (Siblings/Action)
+* **D9**: Navamsha (Marriage/Fruit of Chart)
+* **D10**: Dashamsha (Career/Success)
+* **D60**: Shastiamsha (Subtle Karma)
 
 
+* **Real-time Transit Overlay**: Visualize current planetary positions (in orange) layered over natal placements.
+* **Planetary Drishti (Aspects)**: Color-coded aspect lines identifying the influence of planets (e.g., Mars' 4th/7th/8th aspects in red, Jupiter's 5th/7th/9th in gold).
+* **Vimshottari Dasha System**: Comprehensive 3-level time-period calculation (Mahadasha, Antardasha, and Pratyantar Dasha) with age tracking.
+* **Automated Timezone Engine**: Search for any city globally; the app automatically calculates the correct UTC offset, accounting for historical Daylight Saving Time (DST).
+* **Planetary Status Markers**: Icons for Retrograde (↓) and Combustion (*).
 
 ---
 
-### ### Installation
+## 🛠 Prerequisites & Installation
 
-To run this application, you need Python installed on your system. You must install the following dependencies:
+To run this application, you must have Python 3.8+ installed. You will need to install the following dependencies:
 
-#### 1. Core Libraries
+### 1. Install System Dependencies
 
-Open your terminal or command prompt and run:
+The core engine uses the Swiss Ephemeris. Install the required Python wrappers and utility libraries:
 
 ```bash
-pip install pyswisseph geopy tkcalendar
+pip install pyswisseph geopy tkcalendar timezonefinder pytz
 
 ```
 
-#### 2. System Dependencies
+### 2. Package Breakdown
 
-* **Tkinter:** Usually comes pre-installed with Python. If you receive a `ModuleNotFoundError: No module named 'tkinter'`, install it via:
-* **Linux (Ubuntu/Debian):** `sudo apt-get install python3-tk`
-* **macOS:** Install via Homebrew: `brew install python-tk`
-* **Windows:** Re-run the Python installer and ensure "tcl/tk and IDLE" is checked.
-
-
-
----
-
-### ### Technical Details
-
-The app calculates positions based on the **Sidereal Zodiac**.
-
-| Component | Logic Applied |
+| Package | Purpose |
 | --- | --- |
-| **Ephemeris** | Swiss Ephemeris (FLG_SIDEREAL) |
-| **House System** | Equal House (Whole Sign) |
-| **Dasha Year** | 365.25 Days (Solar Year Approximation) |
-| **DMS Format** | $DD^\circ MM' SS''$ |
+| `pyswisseph` | Precision astronomical calculations (Ephemeris). |
+| `geopy` | Geocoding city names into Latitude/Longitude. |
+| `tkcalendar` | Calendar widget for date selection. |
+| `timezonefinder` | Determines Timezone names from coordinates. |
+| `pytz` | Handles UTC offset and Daylight Saving Time logic. |
 
 ---
 
-### ### How to Use
+## 🖥 How to Run
 
-1. **Run the script:** `python main.py` (replace with your filename).
-2. **Set Location:** Type a city name and click **Search** to fetch coordinates, or enter Lat/Lon manually.
-3. **Enter Birth Details:** Use the calendar or the increment buttons (`<` / `>`) to set date and time. The chart updates automatically.
-4. **View Dashas:** * Click on a row in the **Mahadasha** table to load its **Antardashas**.
-* Click on an **Antardasha** row to load the **Pratyantardashas**.
+1. Save the provided Python code into a file named `vedic_astro.py`.
+2. Open your terminal or command prompt.
+3. Navigate to the directory containing the file.
+4. Execute the script:
+
+```bash
+python vedic_astro.py
+
+```
+
+---
+
+## 📖 Usage Guide
+
+### 1. Setting Location & Time
+
+* **City Search**: Enter a city (e.g., "London" or "Tokyo") and click **Search & Get TZ**. The app will fetch coordinates and the correct timezone offset for that location.
+* **Cascading Time**: Use the `<` and `>` buttons to step through minutes, hours, or days. The chart updates instantly, allowing you to see how planetary positions shift in real-time.
+
+### 2. Analyzing Charts
+
+* **Divisional Selection**: Use the dropdown menu to switch the secondary chart between D9, D10, etc.
+* **Dignity Colors**:
+* <span style="color:green">**Green**</span>: Exalted Planet.
+* <span style="color:red">**Red**</span>: Debilitated Planet.
+* **Black**: Neutral/Friend/Enemy status.
+
+
+
+### 3. Predictive Analysis
+
+* **Dasha Tables**: Select a row in the **Mahadasha** table to populate its **Antardashas**. Selecting an Antardasha will reveal the **Pratyantar** (sub-sub) periods.
+
+---
+
+## ⚠️ Notes
+
+* **Ayanamsha**: The system defaults to **Lahiri (Chitra Paksha)**, the standard for Vedic Astrology.
+* **Ephemeris Files**: The `swisseph` library calculates positions mathematically, but for extreme date ranges (thousands of years), it may seek external `.se1` files.
