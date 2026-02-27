@@ -95,3 +95,12 @@ python vedic_astro.py
 
 ## How the app looks like
 <img width="1284" height="1128" alt="image" src="https://github.com/user-attachments/assets/ee302586-6fa5-477b-aacf-895911261865" />
+
+## Why this Jyotish Suite?
+
+Most astrology software is either closed-source or lacks astronomical precision. This **Vedic Astrology Suite** bridges the gap by providing:
+
+* **NASA-Grade Accuracy:** Powered by the Swiss Ephemeris for Lahiri Ayanamsha.
+* **Dynamic UX:** Instant chart updates as you step through time—perfect for birth-time rectification.
+* **Global Readiness:** Integrated `timezonefinder` and `geopy` for automatic UTC offset detection anywhere in the world.
+* **Visual Intelligence:** Toggleable North/South Indian styles with color-coded planetary dignities and custom Drishti (aspect) line mapping.
