@@ -92,3 +92,6 @@ python vedic_astro.py
 
 * **Ayanamsha**: The system defaults to **Lahiri (Chitra Paksha)**, the standard for Vedic Astrology.
 * **Ephemeris Files**: The `swisseph` library calculates positions mathematically, but for extreme date ranges (thousands of years), it may seek external `.se1` files.
+
+## How the app looks like
+<img width="1284" height="1128" alt="image" src="https://github.com/user-attachments/assets/ee302586-6fa5-477b-aacf-895911261865" />
