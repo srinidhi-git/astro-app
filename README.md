@@ -58,7 +58,7 @@ pip install pyswisseph geopy tkcalendar timezonefinder pytz
 ### 4. Running the App
 
 ```bash
-python vedic_astro_v1_9_7.py
+python main.py
 
 ```
 
