@@ -11,7 +11,7 @@ import pytz
 class ProfessionalVedicAppV1:
     def __init__(self, root):
         self.root = root
-        self.root.title("Vedic Astrology Suite - V1.9.5 (Accurate Divs, Colored Drishti, Live Sync)")
+        self.root.title("Vedic Astrology Suite - V1.9.7")
         self.root.geometry("1000x950")
         
         # --- Scrollable Main Container ---
@@ -34,7 +34,7 @@ class ProfessionalVedicAppV1:
         
         # State & Constants (Default to Bangalore)
         self.lat, self.lon, self.tz = tk.DoubleVar(value=12.9716), tk.DoubleVar(value=77.5946), tk.DoubleVar(value=5.5)
-        self.geolocator = Nominatim(user_agent="vedic_astro_v1_9_5")
+        self.geolocator = Nominatim(user_agent="vedic_astro_v1_9_7")
         self.tz_finder = TimezoneFinder()
         self._updating = False
         
@@ -49,11 +49,23 @@ class ProfessionalVedicAppV1:
         self.lord_order = ["Ketu", "Venus", "Sun", "Moon", "Mars", "Rahu", "Jupiter", "Saturn", "Mercury"]
         self.dasha_years = {"Ketu": 7, "Venus": 20, "Sun": 6, "Moon": 10, "Mars": 7, "Rahu": 18, "Jupiter": 16, "Saturn": 19, "Mercury": 17}
         self.signs = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
-        self.d_charts = {"D2 (Hora)": 2, "D3 (Drekkana)": 3, "D9 (Navamsha)": 9, "D10 (Dashamsha)": 10, "D60 (Shastiamsha)": 60}
+        
+        # Updated Full 16 Parashari Divisional Charts
+        self.d_charts = {
+            "D2 (Hora)": 2, "D3 (Drekkana)": 3, "D4 (Chaturthamsha)": 4, 
+            "D7 (Saptamsha)": 7, "D9 (Navamsha)": 9, "D10 (Dashamsha)": 10, 
+            "D12 (Dwadashamsha)": 12, "D16 (Shodashamsha)": 16, 
+            "D20 (Vimshamsha)": 20, "D24 (Chaturvimshamsha)": 24, 
+            "D27 (Saptavimshamsha)": 27, "D30 (Trimshamsha)": 30, 
+            "D40 (Khavedamsha)": 40, "D45 (Akshavedamsha)": 45, 
+            "D60 (Shastiamsha)": 60
+        }
         self.selected_d_label = tk.StringVar(value="D9 (Navamsha)")
 
+        # Corrected: Sign indices for Exaltation (0=Aries, 1=Taurus... 11=Pisces)
+        # The first number is the sign index. The second is deep exaltation degree.
         self.dignities = {
-            "Sun": (0, 10), "Moo": (3, 3), "Mar": (9, 28), "Mer": (5, 15),
+            "Sun": (0, 10), "Moo": (1, 3), "Mar": (9, 28), "Mer": (5, 15),
             "Jup": (3, 5), "Ven": (11, 27), "Sat": (6, 20)
         }
         self.combust_limits = {"Moo": 12, "Mar": 17, "Mer": 14, "Jup": 11, "Ven": 10, "Sat": 15}
@@ -98,7 +110,7 @@ class ProfessionalVedicAppV1:
             tk.Button(btn_frame, text=">", width=2, command=lambda x=l: self.step_time(x, 1)).pack(side=tk.LEFT)
         
         # Divisional Chart Dropdown
-        div_cb = ttk.Combobox(time_frame, textvariable=self.selected_d_label, values=list(self.d_charts.keys()), state="readonly", width=18)
+        div_cb = ttk.Combobox(time_frame, textvariable=self.selected_d_label, values=list(self.d_charts.keys()), state="readonly", width=20)
         div_cb.grid(row=0, column=7, padx=20)
         div_cb.bind("<<ComboboxSelected>>", lambda e: self.update_chart())
 
@@ -114,7 +126,7 @@ class ProfessionalVedicAppV1:
         self.canvas_div = tk.Canvas(chart_container, width=380, height=380, bg="white", highlightthickness=1); self.canvas_div.pack(side=tk.LEFT, padx=10)
 
         table_frame = tk.Frame(parent); table_frame.pack(fill="x", padx=20, pady=5)
-        self.tree = ttk.Treeview(table_frame, columns=("Planet", "DMS", "Rashi", "Nakshatra", "Pada", "Nak Lord", "Status"), show="headings", height=10)
+        self.tree = ttk.Treeview(table_frame, columns=("Planet", "DMS", "Rashi", "Nakshatra", "Pada", "Nak Lord", "Status"), show="headings", height=11)
         for c in self.tree["columns"]: self.tree.heading(c, text=c); self.tree.column(c, width=110, anchor="center")
         self.tree.pack(fill="x")
 
@@ -170,17 +182,41 @@ class ProfessionalVedicAppV1:
         return f"{d:02d}°{m:02d}'{s:02d}\""
 
     def get_planet_status(self, name, lon, speed, sun_lon):
-        if name in ["ASC", "Rah", "Ket", "Sun"]: return ""
+        if name == "ASC": return ""
         status = []
-        if speed < 0: status.append("↓")
-        diff = abs(lon - sun_lon); diff = 360 - diff if diff > 180 else diff
-        if diff < self.combust_limits.get(name, 8.0): status.append("*")
+        is_retro = False
+        
+        # Retrogression markers
+        if name in ["Rah", "Ket"]:
+            status.append("↓")
+            is_retro = True
+        elif name not in ["Sun", "Moo"] and speed < 0:
+            status.append("↓")
+            is_retro = True
+
+        # Combustion logic
+        if name not in ["Sun", "Rah", "Ket"]:
+            diff = abs(lon - sun_lon)
+            diff = 360 - diff if diff > 180 else diff
+            
+            # Fetch base limit
+            limit = self.combust_limits.get(name, 15.0)
+            
+            # Retrograde planets have tighter combustion limits in some cases
+            if is_retro:
+                if name == "Mer": limit = 12.0
+                elif name == "Ven": limit = 8.0
+                
+            if diff <= limit:
+                status.append("*")
+                
         return "".join(status)
 
     def get_dignity_color(self, name, lon):
         if name not in self.dignities: return "black"
         sign_idx = int(lon/30)
         exalt_sign, _ = self.dignities[name]
+        
         if sign_idx == exalt_sign: return "green"
         if sign_idx == (exalt_sign + 6) % 12: return "red"
         return "black"
@@ -207,26 +243,74 @@ class ProfessionalVedicAppV1:
         sign = int(lon / 30)
         rem = lon % 30
         
-        if d_chart_val == 2:  # Hora (D2)
+        if d_chart_val == 2:  # Hora
             half = int(rem / 15)
-            # In python array: 0=Aries (Odd in Astro), 1=Taurus (Even).
-            # If sign index % 2 == 0 (Aries, Gemini), it's an Odd sign.
-            if sign % 2 == 0: return 4 if half == 0 else 3 # 4=Leo, 3=Cancer
+            if sign % 2 == 0: return 4 if half == 0 else 3
             else: return 3 if half == 0 else 4
-        elif d_chart_val == 3:  # Drekkana (D3)
+        elif d_chart_val == 3:  # Drekkana
             part = int(rem / 10)
             return (sign + part * 4) % 12
-        elif d_chart_val == 9:  # Navamsha (D9)
+        elif d_chart_val == 4:  # Chaturthamsha
+            part = int(rem / 7.5)
+            return (sign + part * 3) % 12
+        elif d_chart_val == 7:  # Saptamsha
+            part = int(rem / (30/7))
+            start = sign if sign % 2 == 0 else (sign + 6) % 12
+            return (start + part) % 12
+        elif d_chart_val == 9:  # Navamsha
             return int((lon * 9) / 30) % 12
-        elif d_chart_val == 10: # Dashamsha (D10)
+        elif d_chart_val == 10: # Dashamsha
             part = int(rem / 3)
             start = sign if sign % 2 == 0 else (sign + 8) % 12
             return (start + part) % 12
-        elif d_chart_val == 60: # Shastiamsha (D60)
+        elif d_chart_val == 12: # Dwadashamsha
+            part = int(rem / 2.5)
+            return (sign + part) % 12
+        elif d_chart_val == 16: # Shodashamsha
+            part = int(rem / (30/16))
+            start = (sign % 3) * 4
+            return (start + part) % 12
+        elif d_chart_val == 20: # Vimshamsha
+            part = int(rem / 1.5)
+            if sign % 3 == 0: start = 0
+            elif sign % 3 == 1: start = 8
+            else: start = 4
+            return (start + part) % 12
+        elif d_chart_val == 24: # Chaturvimshamsha
+            part = int(rem / 1.25)
+            start = 4 if sign % 2 == 0 else 3
+            return (start + part) % 12
+        elif d_chart_val == 27: # Saptavimshamsha / Bhamsha
+            part = int(rem / (30/27))
+            start = (sign % 4) * 3
+            return (start + part) % 12
+        elif d_chart_val == 30: # Trimshamsha
+            deg = rem
+            if sign % 2 == 0:
+                if deg < 5: return 0
+                elif deg < 10: return 10
+                elif deg < 18: return 8
+                elif deg < 25: return 2
+                else: return 6
+            else:
+                if deg < 5: return 1
+                elif deg < 12: return 5
+                elif deg < 20: return 11
+                elif deg < 25: return 9
+                else: return 7
+        elif d_chart_val == 40: # Khavedamsha
+            part = int(rem / 0.75)
+            start = 0 if sign % 2 == 0 else 6
+            return (start + part) % 12
+        elif d_chart_val == 45: # Akshavedamsha
+            part = int(rem / (30/45))
+            start = (sign % 3) * 4
+            return (start + part) % 12
+        elif d_chart_val == 60: # Shastiamsha
             part = int(rem * 2)
             return (sign + part) % 12
             
-        return sign # Default D1 catch-all
+        return sign
 
     def update_chart(self):
         try:
@@ -248,8 +332,9 @@ class ProfessionalVedicAppV1:
             
             objs = [("ASC", -1), ("Sun", 0), ("Moo", 1), ("Mar", 4), ("Mer", 2), ("Jup", 5), ("Ven", 3), ("Sat", 6), ("Rah", 11)]
             for name, p_id in objs:
-                res = [ascmc[0], 0] if name == "ASC" else swe.calc_ut(jd, p_id, flags)[0]
-                lon, speed = res[0], res[1]
+                res = [ascmc[0], 0, 0, 0] if name == "ASC" else swe.calc_ut(jd, p_id, flags)[0]
+                lon, speed = res[0], res[3]
+                
                 idx_d1 = int(lon/30)
                 idx_div = self.get_divisional_sign(lon, d_val)
                 
@@ -266,8 +351,13 @@ class ProfessionalVedicAppV1:
                     k_lon = (lon + 180)%360
                     idx_d1_k = int(k_lon/30)
                     idx_div_k = self.get_divisional_sign(k_lon, d_val)
-                    p_d1[idx_d1_k].append(("Ket", self.format_dms(k_lon), "black"))
-                    p_div[idx_div_k].append(("Ket", "", "black"))
+                    k_status = self.get_planet_status("Ket", k_lon, speed, sun_lon)
+                    
+                    p_d1[idx_d1_k].append((f"Ket{k_status}", self.format_dms(k_lon), "black"))
+                    p_div[idx_div_k].append((f"Ket{k_status}", "", "black"))
+                    
+                    k_abs_nak = k_lon / (360/27); k_n_idx = int(k_abs_nak)
+                    self.tree.insert("", "end", values=(f"Ket{k_status}", self.format_dms(k_lon), self.signs[idx_d1_k], self.nakshatras[k_n_idx], int((k_abs_nak - k_n_idx)*4)+1, self.lord_order[k_n_idx%9], k_status))
 
             if self.show_transits.get():
                 now = datetime.utcnow()
@@ -277,7 +367,7 @@ class ProfessionalVedicAppV1:
                 for name, p_id in objs:
                     if name == "ASC": continue
                     res = swe.calc_ut(jd_now, p_id, flags)[0]
-                    lon, speed = res[0], res[1]
+                    lon, speed = res[0], res[3]
                     idx_d1 = int(lon/30)
                     idx_div = self.get_divisional_sign(lon, d_val)
                     status = self.get_planet_status(name, lon, speed, sun_lon_now)
@@ -287,8 +377,9 @@ class ProfessionalVedicAppV1:
                     
                     if name == "Rah":
                         k_lon = (lon + 180)%360
-                        t_d1[int(k_lon/30)].append(("T-Ket", "", "darkorange"))
-                        t_div[self.get_divisional_sign(k_lon, d_val)].append(("T-Ket", "", "darkorange"))
+                        k_status = self.get_planet_status("Ket", k_lon, speed, sun_lon_now)
+                        t_d1[int(k_lon/30)].append((f"T-Ket{k_status}", "", "darkorange"))
+                        t_div[self.get_divisional_sign(k_lon, d_val)].append((f"T-Ket{k_status}", "", "darkorange"))
 
             self.calculate_mahadasha(moon_long)
             self.draw_chart(self.canvas_d1, p_d1, t_d1, int(ascmc[0]/30), "RASHI (D1)")
@@ -314,7 +405,6 @@ class ProfessionalVedicAppV1:
         is_north = self.north_style.get()
         font_sz = 7 if self.show_transits.get() else 8
 
-        # --- Base Drawing ---
         if not is_north:
             b = 95
             grid = {11:(0,0), 0:(1,0), 1:(2,0), 2:(3,0), 10:(0,1), 3:(3,1), 9:(0,2), 4:(3,2), 8:(0,3), 7:(1,3), 6:(2,3), 5:(3,3)}
@@ -331,14 +421,12 @@ class ProfessionalVedicAppV1:
             can.create_line(w/2, h, 0, h/2, fill="black"); can.create_line(0, h/2, w/2, 0, fill="black")
             can.create_text(190, 190, text=title, font=("Arial", 11, "bold"), fill="darkblue")
 
-        # --- Aspect (Drishti) Lines ---
         if self.show_drishti.get():
             aspect_map = {
                 "Mar": [3, 6, 7], "Jup": [4, 6, 8], "Sat": [2, 6, 9], 
                 "Rah": [4, 6, 8], "Ket": [4, 6, 8], 
                 "Sun": [6], "Moo": [6], "Ven": [6], "Mer": [6]
             }
-            # Planet-specific drishti colors
             drishti_colors = {
                 "Mar": "red", "Jup": "#DAA520", "Sat": "blue", 
                 "Rah": "brown", "Ket": "brown", 
@@ -356,7 +444,6 @@ class ProfessionalVedicAppV1:
                             color = drishti_colors.get(base_n, "#d3e0ea")
                             can.create_line(x1, y1, x2, y2, fill=color, dash=(2, 2))
 
-        # --- Text Placement ---
         for sign_idx in range(12):
             cx, cy = self.get_sign_center(is_north, sign_idx, asc_idx)
             if is_north: can.create_text(cx, cy-20, text=str(sign_idx+1), font=("Arial", 7), fill="gray")
