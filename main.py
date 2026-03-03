@@ -14,7 +14,7 @@ import pytz
 class ProfessionalVedicAppV1:
     def __init__(self, root):
         self.root = root
-        self.root.title("Vedic Astrology Suite - V1.9.14 (Precision Seconds & Searchable Profiles)")
+        self.root.title("Vedic Astrology Suite - V1.9.15 (Profile Management Update)")
         self.root.geometry("1400x1000")
         
         # --- Scrollable Main Container ---
@@ -38,7 +38,7 @@ class ProfessionalVedicAppV1:
         # State & Constants
         self.profile_file = "astro_profiles.json"
         self.lat, self.lon, self.tz = tk.DoubleVar(value=12.9716), tk.DoubleVar(value=77.5946), tk.DoubleVar(value=5.5)
-        self.geolocator = Nominatim(user_agent="vedic_astro_v1_9_14")
+        self.geolocator = Nominatim(user_agent="vedic_astro_v1_9_15")
         self.tz_finder = TimezoneFinder()
         self._updating = False
         self.all_profiles = []
@@ -106,6 +106,7 @@ class ProfessionalVedicAppV1:
         self.profile_cb.pack(side=tk.LEFT, padx=5)
         self.load_profile_list()
         tk.Button(prof_frame, text="Load Selected", command=self.load_profile).pack(side=tk.LEFT, padx=5)
+        tk.Button(prof_frame, text="Delete Profile", command=self.delete_profile, fg="red").pack(side=tk.LEFT, padx=5)
         
         # --- Location Settings ---
         loc_frame = tk.LabelFrame(parent, text=" Location Settings ")
@@ -169,7 +170,7 @@ class ProfessionalVedicAppV1:
 
         self.setup_dasha_ui(parent)
 
-    # --- Profile Logic (Searchable & Sorted) ---
+    # --- Profile Logic ---
     def filter_profiles(self, *args):
         search_term = self.search_var.get().lower()
         filtered = [p for p in self.all_profiles if search_term in p.lower()]
@@ -190,6 +191,23 @@ class ProfessionalVedicAppV1:
         with open(self.profile_file, 'w') as f: json.dump(profiles, f)
         self.load_profile_list()
         messagebox.showinfo("Success", f"Profile '{name}' saved.")
+
+    def delete_profile(self):
+        name = self.profile_cb.get()
+        if not name: return
+        if not messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete profile '{name}'?"):
+            return
+        
+        if os.path.exists(self.profile_file):
+            with open(self.profile_file, 'r') as f:
+                profiles = json.load(f)
+            if name in profiles:
+                del profiles[name]
+                with open(self.profile_file, 'w') as f:
+                    json.dump(profiles, f)
+                self.load_profile_list()
+                self.search_var.set("") # Clear after delete
+                messagebox.showinfo("Success", f"Profile '{name}' deleted.")
 
     def load_profile_list(self):
         if os.path.exists(self.profile_file):
@@ -213,6 +231,7 @@ class ProfessionalVedicAppV1:
                 self.time_vars[k].set(str(val))
             self.cal.set_date(datetime(int(d['year']), int(d['month']), int(d['day'])))
             self._updating = False
+            self.search_var.set("") # Clear search text after loading
             self.update_chart()
 
     def format_time(self, hrs_float):
